@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Working Capital Analyzer Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="logo">
+      <div class="logo-mark">WC</div>
+      <div class="logo-text">
+        <h1>Working Capital Analyzer Pro</h1>
+        <p>Análisis profesional de capital de trabajo</p>
+      </div>
+    </div>
+    <button id="export-pdf-btn" class="btn ghost-btn">Exportar informe (PDF)</button>
+  </header>
+
+  <main class="app-main">
+    <!-- Panel de Inputs -->
+    <section class="card input-panel">
+      <h2>Datos de la empresa</h2>
+      <p class="hint">
+        Ingresa tus cifras financieras y selecciona tu industria para un análisis completo.
+      </p>
+
+      <div class="toolbar-row">
+        <div class="mode-toggle">
+          <span class="mode-label">Modo:</span>
+          <button type="button" class="mode-btn active" data-mode="advanced">Avanzado</button>
+          <button type="button" class="mode-btn" data-mode="basic">Básico</button>
+        </div>
+        <button type="button" id="load-demo-btn" class="btn small-btn ghost-btn">Cargar ejemplo</button>
+      </div>
+
+      <form id="input-form">
+        <div class="form-group">
+          <label for="company-name">Nombre de la empresa</label>
+          <input type="text" id="company-name" placeholder="Ej. Mi Empresa SA" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="currency">Moneda</label>
+            <input type="text" id="currency" value="USD" />
+          </div>
+          <div class="form-group">
+            <label for="industry">Industria</label>
+            <select id="industry">
+              <option value="oilgas">Oil & Gas Services</option>
+              <option value="manufacturing">Manufacturing</option>
+              <option value="distribution">Distribution</option>
+              <option value="retail">Retail</option>
+              <option value="tech">Technology</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="periodicity">Periodicidad de datos</label>
+          <select id="periodicity">
+            <option value="annual" selected>Anual</option>
+            <option value="quarterly">Trimestral</option>
+            <option value="monthly">Mensual</option>
+          </select>
+        </div>
+
+        <h3>Estado financiero</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="sales">Ventas del periodo</label>
+            <input type="number" id="sales" placeholder="Ej. 1000000" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="cogs">Costo de ventas (COGS)</label>
+            <input type="number" id="cogs" placeholder="Ej. 600000" step="0.01" />
+          </div>
+        </div>
+
+        <div id="advanced-block">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="receivables">Cuentas por cobrar</label>
+              <input type="number" id="receivables" placeholder="Ej. 165000" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label for="inventory">Inventario</label>
+              <input type="number" id="inventory" placeholder="Ej. 115000" step="0.01" />
+            </div>
+            <div class="form-group">
+              <label for="payables">Cuentas por pagar</label>
+              <input type="number" id="payables" placeholder="Ej. 74000" step="0.01" />
+            </div>
+          </div>
+        </div>
+
+        <div id="basic-block" class="hidden">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="basic-dso">DSO (días)</label>
+              <input type="number" id="basic-dso" placeholder="60" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label for="basic-dio">DIO (días)</label>
+              <input type="number" id="basic-dio" placeholder="70" step="0.1" />
+            </div>
+            <div class="form-group">
+              <label for="basic-dpo">DPO (días)</label>
+              <input type="number" id="basic-dpo" placeholder="45" step="0.1" />
+            </div>
+          </div>
+        </div>
+
+        <h3>Liquidez (opcional)</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="cash">Efectivo</label>
+            <input type="number" id="cash" placeholder="Ej. 50000" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label for="other-current-liab">Otros pasivos corrientes</label>
+            <input type="number" id="other-current-liab" placeholder="Ej. 60000" step="0.01" />
+          </div>
+        </div>
+
+        <h3>Para análisis de crecimiento y valuación</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="growth">Crecimiento esperado (%)</label>
+            <input type="number" id="growth" placeholder="20" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label for="wacc">WACC - Costo de capital (%)</label>
+            <input type="number" id="wacc" placeholder="10" step="0.1" value="10" />
+          </div>
+          <div class="form-group">
+            <label for="ebitda-margin">Margen EBITDA (%)</label>
+            <input type="number" id="ebitda-margin" placeholder="15" step="0.1" value="15" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn primary-btn">Calcular métricas</button>
+          <button type="button" id="reset-btn" class="btn ghost-btn">Limpiar</button>
+        </div>
+
+        <p id="form-error" class="form-error"></p>
+      </form>
+    </section>
+
+    <!-- Panel de Resultados -->
+    <section class="output-panel">
+      <!-- Tabs -->
+      <div class="tabs card">
+        <button class="tab-btn active" data-tab="dashboard-tab">Dashboard</button>
+        <button class="tab-btn" data-tab="benchmark-tab">Benchmark</button>
+        <button class="tab-btn" data-tab="scorecard-tab">Scorecard</button>
+        <button class="tab-btn" data-tab="simulator-tab">Simulador</button>
+        <button class="tab-btn" data-tab="growth-tab">Proyección</button>
+        <button class="tab-btn" data-tab="valuation-tab">Valuación</button>
+      </div>
+
+      <!-- Dashboard -->
+      <section id="dashboard-tab" class="card tab-content active">
+        <div class="section-header">
+          <div>
+            <h2>Diagnóstico de Working Capital</h2>
+            <p class="section-subtitle">Visión rápida de tu ciclo de caja</p>
+          </div>
+          <p id="company-label" class="company-label">Sin datos aún</p>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card ccc-card">
+            <div class="kpi-header-row">
+              <h3>Cash Conversion Cycle</h3>
+              <span id="badge-ccc" class="badge badge-neutral">—</span>
+            </div>
+            <div class="ccc-meter">
+              <div class="ccc-fill" id="ccc-meter-fill"></div>
+            </div>
+            <p class="kpi-main" id="kpi-ccc">—</p>
+            <p class="kpi-sub">Tiempo en convertir inventario en efectivo.</p>
+          </div>
+
+          <div class="kpi-card">
+            <div class="kpi-header-row">
+              <h3>NWC actual</h3>
+              <span id="badge-nwc" class="badge badge-neutral">—</span>
+            </div>
+            <p class="kpi-main" id="kpi-nwc">—</p>
+            <p class="kpi-sub">Capital de trabajo operativo.</p>
+          </div>
+
+          <div class="kpi-card">
+            <h3>NWC / Ventas</h3>
+            <p class="kpi-main" id="kpi-nwc-sales">—</p>
+            <p class="kpi-sub">Porción de ventas en ciclo de caja.</p>
+          </div>
+
+          <div class="kpi-card">
+            <h3>Días de ciclo</h3>
+            <p class="kpi-main" id="kpi-cycle-breakdown">—</p>
+            <p class="kpi-sub">DSO + DIO − DPO.</p>
+          </div>
+
+          <div class="kpi-card">
+            <h3>Liquidez</h3>
+            <p class="kpi-main" id="kpi-liquidity">—</p>
+            <p class="kpi-sub" id="kpi-liquidity-sub">Current y quick ratio.</p>
+          </div>
+
+          <div class="kpi-card highlight-card">
+            <h3>Palanca principal</h3>
+            <p class="kpi-main" id="kpi-main-lever">—</p>
+            <p class="kpi-sub" id="kpi-main-lever-sub">Dónde enfocar primero.</p>
+          </div>
+        </div>
+
+        <div class="metrics-table-wrapper">
+          <h3>Detalle de días de ciclo</h3>
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Métrica</th>
+                <th>Días</th>
+                <th>Descripción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>DSO</td>
+                <td id="val-dso">—</td>
+                <td>Días promedio para cobrar.</td>
+              </tr>
+              <tr>
+                <td>DIO</td>
+                <td id="val-dio">—</td>
+                <td>Días promedio de inventario.</td>
+              </tr>
+              <tr>
+                <td>DPO</td>
+                <td id="val-dpo">—</td>
+                <td>Días promedio para pagar.</td>
+              </tr>
+              <tr>
+                <td>CCC</td>
+                <td id="val-ccc">—</td>
+                <td>DSO + DIO − DPO.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="insights-card">
+          <h3>Resumen ejecutivo</h3>
+          <p id="insights-content" class="insights-text">
+            Completa el formulario para ver el análisis automático.
+          </p>
+        </div>
+      </section>
+
+      <!-- Benchmark Tab -->
+      <section id="benchmark-tab" class="card tab-content">
+        <div class="section-header">
+          <div>
+            <h2>Benchmark por Industria</h2>
+            <p class="section-subtitle">Compara tu desempeño con el promedio de la industria</p>
+          </div>
+        </div>
+
+        <div id="benchmark-warning" class="form-error small">
+          Primero calcula tus métricas en el Dashboard para ver la comparación con tu industria.
+        </div>
+
+        <div class="benchmark-grid" id="benchmark-grid"></div>
+
+        <div class="insights-card" style="margin-top: 1rem;">
+          <h3>Análisis de posición competitiva</h3>
+          <p id="benchmark-insights" class="insights-text">
+            Los benchmarks te mostrarán cómo te comparas con empresas similares de tu industria.
+          </p>
+        </div>
+      </section>
+
+      <!-- Scorecard Tab -->
+      <section id="scorecard-tab" class="card tab-content">
+        <div class="section-header">
+          <div>
+            <h2>Scorecard de Eficiencia</h2>
+            <p class="section-subtitle">Calificaciones automáticas de tu gestión de capital de trabajo</p>
+          </div>
+        </div>
+
+        <div id="scorecard-warning" class="form-error small">
+          Calcula tus métricas primero para ver tu scorecard de eficiencia.
+        </div>
+
+        <div class="scorecard-grid">
+          <div class="score-card">
+            <h4>CCC Score</h4>
+            <div class="score-value" id="score-ccc" style="color: var(--accent);">—</div>
+            <div class="score-max">/100</div>
+            <div class="score-label" id="score-ccc-label" style="background: #e5e7eb;">—</div>
+          </div>
+
+          <div class="score-card">
+            <h4>Cash Efficiency</h4>
+            <div class="score-value" id="score-efficiency" style="color: var(--good);">—</div>
+            <div class="score-max">/100</div>
+            <div class="score-label" id="score-efficiency-label" style="background: #e5e7eb;">—</div>
+          </div>
+
+          <div class="score-card">
+            <h4>Liquidez Score</h4>
+            <div class="score-value" id="score-liquidity" style="color: var(--warn);">—</div>
+            <div class="score-max">/100</div>
+            <div class="score-label" id="score-liquidity-label" style="background: #e5e7eb;">—</div>
+          </div>
+
+          <div class="score-card">
+            <h4>Score Total</h4>
+            <div class="score-value" id="score-total" style="color: var(--text-main);">—</div>
+            <div class="score-max">/100</div>
+            <div class="score-label" id="score-total-label" style="background: #e5e7eb;">—</div>
+          </div>
+        </div>
+
+        <div class="insights-card" style="margin-top: 1rem;">
+          <h3>Interpretación del Scorecard</h3>
+          <p id="scorecard-insights" class="insights-text">
+            El scorecard evalúa tu desempeño en gestión de capital de trabajo en una escala de 0 a 100.
+          </p>
+        </div>
+      </section>
+
+      <!-- Simulador -->
+      <section id="simulator-tab" class="card tab-content">
+        <div class="section-header">
+          <div>
+            <h2>Simulador de políticas (What if...)</h2>
+            <p class="section-subtitle">Ajusta días para ver el impacto en caja</p>
+          </div>
+        </div>
+
+        <div id="sim-warning" class="form-error small">
+          Primero calcula tus métricas en el Dashboard.
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-item">
+            <label for="slider-dso">
+              DSO simulado
+              <span id="slider-dso-value" class="slider-value">—</span> días
+            </label>
+            <input type="range" id="slider-dso" min="0" max="120" value="0" />
+          </div>
+
+          <div class="slider-item">
+            <label for="slider-dio">
+              DIO simulado
+              <span id="slider-dio-value" class="slider-value">—</span> días
+            </label>
+            <input type="range" id="slider-dio" min="0" max="120" value="0" />
+          </div>
+
+          <div class="slider-item">
+            <label for="slider-dpo">
+              DPO simulado
+              <span id="slider-dpo-value" class="slider-value">—</span> días
+            </label>
+            <input type="range" id="slider-dpo" min="0" max="120" value="0" />
+          </div>
+        </div>
+
+        <div class="sim-results-grid">
+          <div class="sim-card">
+            <h3>CCC</h3>
+            <p><strong>Actual:</strong> <span id="sim-ccc-actual">—</span></p>
+            <p><strong>Simulado:</strong> <span id="sim-ccc-new">—</span></p>
+            <p><strong>Mejora:</strong> <span id="sim-ccc-delta">—</span></p>
+          </div>
+
+          <div class="sim-card">
+            <h3>NWC</h3>
+            <p><strong>Actual:</strong> <span id="sim-nwc-actual">—</span></p>
+            <p><strong>Simulado:</strong> <span id="sim-nwc-new">—</span></p>
+          </div>
+
+          <div class="sim-card highlight">
+            <h3>Cash liberado</h3>
+            <p class="sim-cash" id="sim-cash-freed">—</p>
+            <p class="kpi-sub" id="sim-cash-days">NWC actual − NWC simulado.</p>
+          </div>
+        </div>
+
+        <button id="export-sim-csv" class="btn ghost-btn small-btn" style="margin-top: 1rem;">
+          Exportar simulación a CSV
+        </button>
+      </section>
+
+      <!-- Proyección con Growth Capacity -->
+      <section id="growth-tab" class="card tab-content">
+        <div class="section-header">
+          <div>
+            <h2>Proyección y Capacidad de Crecimiento</h2>
+            <p class="section-subtitle">Cuánto puedes crecer sin financiamiento adicional</p>
+          </div>
+        </div>
+
+        <div id="growth-warning" class="form-error small">
+          Calcula primero tus métricas y define un % de crecimiento.
+        </div>
+
+        <!-- Growth Capacity Card -->
+        <div class="growth-capacity-card">
+          <h3>📈 Tasa de Crecimiento Sostenible (SGR-WC)</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.3rem 0 0.6rem;">
+            Crecimiento máximo que puedes lograr sin necesitar financiamiento externo para capital de trabajo.
+          </p>
+          
+          <div class="growth-metric">
+            <span class="growth-metric-label">Crecimiento sostenible máximo:</span>
+            <span class="growth-metric-value" id="sgr-value">—</span>
+          </div>
+          
+          <div class="growth-metric">
+            <span class="growth-metric-label">Crecimiento planeado:</span>
+            <span class="growth-metric-value" id="planned-growth-value" style="color: var(--accent);">—</span>
+          </div>
+          
+          <p id="sgr-message" style="font-size: 0.8rem; margin-top: 0.6rem; padding: 0.5rem; background: rgba(255,255,255,0.8); border-radius: 8px;">
+            —
+          </p>
+        </div>
+
+        <div class="projection-grid" style="margin-top: 1rem;">
+          <div class="proj-card">
+            <h3>Ratios actuales</h3>
+            <ul>
+              <li>CxC / Ventas: <span id="ratio-cxc-ventas">—</span></li>
+              <li>Inv / COGS: <span id="ratio-inv-cogs">—</span></li>
+              <li>CxP / COGS: <span id="ratio-cxp-cogs">—</span></li>
+              <li>NWC / Ventas: <span id="ratio-nwc-ventas">—</span></li>
+            </ul>
+          </div>
+
+          <div class="proj-card">
+            <h3>NWC proyectado</h3>
+            <p><strong>NWC actual:</strong> <span id="growth-nwc-actual">—</span></p>
+            <p><strong>NWC requerido:</strong> <span id="growth-nwc-needed">—</span></p>
+            <p><strong>Capital adicional:</strong> <span id="growth-extra-nwc">—</span></p>
+          </div>
+
+          <div class="proj-card">
+            <h3>Ventas proyectadas</h3>
+            <p><strong>Ventas futuras:</strong> <span id="growth-sales-future">—</span></p>
+            <p><strong>COGS futuro:</strong> <span id="growth-cogs-future">—</span></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Valuation Tab -->
+      <section id="valuation-tab" class="card tab-content">
+        <div class="section-header">
+          <div>
+            <h2>Impacto en Valuación</h2>
+            <p class="section-subtitle">Cómo la mejora en WC incrementa el valor de tu empresa</p>
+          </div>
+        </div>
+
+        <div id="valuation-warning" class="form-error small">
+          Calcula tus métricas y define WACC y margen EBITDA para ver el impacto en valuación.
+        </div>
+
+        <div class="valuation-card">
+          <h3>💰 Incremento de Valor por Mejora en Capital de Trabajo</h3>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0.3rem 0 0.6rem;">
+            Si mejoras tu gestión de capital de trabajo, liberas caja que aumenta el valor de tu empresa.
+          </p>
+
+          <div class="valuation-impact">
+            <div class="impact-item">
+              <h5>Reducción DSO en 5 días</h5>
+              <div class="impact-value" id="val-impact-dso">—</div>
+              <p style="font-size: 0.7rem; margin: 0.2rem 0 0; color: var(--text-muted);">Incremento en valor</p>
+            </div>
+
+            <div class="impact-item">
+              <h5>Reducción DIO en 5 días</h5>
+              <div class="impact-value" id="val-impact-dio">—</div>
+              <p style="font-size: 0.7rem; margin: 0.2rem 0 0; color: var(--text-muted);">Incremento en valor</p>
+            </div>
+
+            <div class="impact-item">
+              <h5>Aumento DPO en 5 días</h5>
+              <div class="impact-value" id="val-impact-dpo">—</div>
+              <p style="font-size: 0.7rem; margin: 0.2rem 0 0; color: var(--text-muted);">Incremento en valor</p>
+            </div>
+
+            <div class="impact-item">
+              <h5>Mejora combinada (15 días)</h5>
+              <div class="impact-value" id="val-impact-total" style="font-size: 1.3rem;">—</div>
+              <p style="font-size: 0.7rem; margin: 0.2rem 0 0; color: var(--text-muted);">Incremento total potencial</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="insights-card" style="margin-top: 1rem;">
+          <h3>Metodología de Valuación</h3>
+          <p id="valuation-insights" class="insights-text">
+            El análisis utiliza un enfoque DCF simplificado: el cash liberado se capitaliza usando tu WACC.
+            Fórmula: Valor Incremental = (Cash Liberado × Margen EBITDA) / WACC.
+            Esto representa el valor presente del flujo de caja adicional generado por la mejora en eficiencia.
+          </p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Working Capital Analyzer Pro · Jerson Martinez</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
